@@ -1,6 +1,6 @@
 const express = require("express");
 const ExpressError = require("../expressError")
-const router = express.Router();
+let router = new express.Router();
 const db = require("../db");
 const { route } = require("./companies");
 const { request, response } = require("../app");
@@ -44,15 +44,53 @@ router.post("/", async (req, res, next)=>{
     }
 })
 
-router.patch("/id", async(req, res, next)=>{
+//patch 1.0
+// router.patch("/:id", async(req, res, next)=>{
+//     try{
+//         const {id} = req.params
+//         const {comp_Code, amt, paid, paid_date} = req.body
+//         const results = await db.query("UPDATE invoices SET comp_Code=$1, amt=$2, paid=$3, paid_date=$4 WHERE id=$5 RETURNING comp_Code, amt, paid, paid_date, id", [comp_Code, amt, paid, paid_date, id])
+//         if(results.rows.length === 0){
+//             throw new ExpressError(`Cannot update this invoice with the id of ${id}`, 404)
+//         }
+//         return res.send({invoices: results.rows})
+//     }
+//     catch(e){
+//         next(e)
+//     }
+// })
+
+//patch 1.1
+router.patch("/:id", async(req, res, next)=>{
     try{
         const {id} = req.params
-        const {comp_Code, amt, paid, paid_date} = req.body
+        const {comp_Code, amt, paid} = req.body
+        const paidDate = null
         const results = await db.query("UPDATE invoices SET comp_Code=$1, amt=$2, paid=$3, paid_date=$4 WHERE id=$5 RETURNING comp_Code, amt, paid, paid_date, id", [comp_Code, amt, paid, paid_date, id])
         if(results.rows.length === 0){
             throw new ExpressError(`Cannot update this invoice with the id of ${id}`, 404)
         }
         return res.send({invoices: results.rows})
+
+        const currPaidDate = results.rows[0].paid_date
+        if (!currPaidDate && paid){
+            paidDate = new Date()
+        }
+        else if (!paid){
+            paidDate = null
+        }
+        else{
+            paidDate = currPaidDate
+        }
+
+        const result2 = await db.query(
+            `UPDATE invoices
+             SET amt=$1, paid=$2, paid_date=$3
+             WHERE id=$4
+             RETURNING id, comp_code, amt, paid, add_date, paid_date`,
+          [amt, paid, paidDate, id]);
+  
+      return res.json({"invoice": result2.rows[0]});
     }
     catch(e){
         next(e)

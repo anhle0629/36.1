@@ -27,9 +27,24 @@ router.get("/:code", async (request, response, next)=>{
     }
 })
 
+
+//POST 1.0//
+// router.post("/", async (req, res, next)=>{
+//     try{
+//         const {code, name, description} = req.body;
+//         const results = await db.query("INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description", [code, name, description])
+//         return response.statusCode(201).json({companies: results.rows[0]})
+//     }
+//     catch(err){
+//         return next(err)
+//     }
+// })
+
+//POST 1.1
 router.post("/", async (req, res, next)=>{
     try{
-        const {code, name, description} = req.body;
+        let code = slugify(name, {lower: true})
+        const {name, description} = req.body;
         const results = await db.query("INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description", [code, name, description])
         return response.statusCode(201).json({companies: results.rows[0]})
     }
